@@ -18,9 +18,5 @@ dependencies = [
 test = ["pytest"]
 docs = ["mkdocs", "mkdocs-material", "mkdocs-jupyter"]
 
-[tool.setuptools]
-packages = ["cnc_five_axis_interpolation"]
-package-dir = {"cnc_five_axis_interpolation" = "."}
-
 [tool.pytest.ini_options]
 testpaths = ["tests"]
