@@ -1,0 +1,1495 @@
+
+<!doctype html>
+<html lang="zh" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Yuen et al. (2013) C³ Five-Axis Trajectory Generation">
+      
+      
+      
+      
+        <link rel="prev" href="../arc_length_parameterization/">
+      
+      
+        <link rel="next" href="../spherical_orientation/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>进给校正多项式 (Eq.11-23) - cnc_five_axis_interpolation</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.484c7ddc.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#eq11-23" class="md-skip">
+          跳转至
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="页眉">
+    <a href="../.." title="cnc_five_axis_interpolation" class="md-header__button md-logo" aria-label="cnc_five_axis_interpolation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            cnc_five_axis_interpolation
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              进给校正多项式 (Eq.11-23)
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-hidden="true"  type="radio" name="__palette" id="__palette_0">
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="搜索" placeholder="搜索" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="查找">
+        
+        <button type="reset" class="md-search__icon md-icon" title="清空当前内容" aria-label="清空当前内容" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            正在初始化搜索引擎
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="导航栏" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="cnc_five_axis_interpolation" class="md-nav__button md-logo" aria-label="cnc_five_axis_interpolation" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    cnc_five_axis_interpolation
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    首页
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_2" id="__nav_2_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    教程
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    教程
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/01_position_spline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    位置样条
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/02_orientation_spline/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    姿态样条
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/03_inverse_kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    逆运动学
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../notebooks/04_end_to_end_example/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    端到端示例
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    数学推导
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    数学推导
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bspline_interpolation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    B样条插值 (Eq.1-7)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../arc_length_parameterization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    弧长参数化 (Eq.8-10)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    进给校正多项式 (Eq.11-23)
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    进给校正多项式 (Eq.11-23)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 问题定义
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 问题定义">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 弧长参数化目标
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-c3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 为什么需要 C³ 连续
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-9-eq11-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 9 阶多项式形式 (Eq.11-13)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 9 阶多项式形式 (Eq.11-13)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 归一化形式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-eq12-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 矩阵形式 (Eq.12-13)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-c3-eq14-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. C³ 边界条件 (Eq.14-18)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. C³ 边界条件 (Eq.14-18)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 导数关系推导
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 边界约束
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-eq17-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 约束矩阵构造 (Eq.17-18)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-eq19-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 约束最小二乘 (Eq.19-22)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 约束最小二乘 (Eq.19-22)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-kkt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 KKT 系统
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 求解
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-eq23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 自适应细分 (Eq.23)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 自适应细分 (Eq.23)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-mse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 MSE 误差准则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 细分策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 分段策略的优势
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        总结
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../spherical_orientation/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    球坐标姿态 (Eq.25-31)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../bezier_reparameterization/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Bézier重参数化 (Eq.32-41)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ac_kinematics/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A-C逆运动学 (Eq.42)
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="目录">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      目录
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. 问题定义
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="1. 问题定义">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#11" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.1 弧长参数化目标
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#12-c3" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1.2 为什么需要 C³ 连续
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#2-9-eq11-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. 9 阶多项式形式 (Eq.11-13)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="2. 9 阶多项式形式 (Eq.11-13)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#21" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.1 归一化形式
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#22-eq12-13" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2.2 矩阵形式 (Eq.12-13)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#3-c3-eq14-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. C³ 边界条件 (Eq.14-18)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="3. C³ 边界条件 (Eq.14-18)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#31" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.1 导数关系推导
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#32" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.2 边界约束
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#33-eq17-18" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3.3 约束矩阵构造 (Eq.17-18)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#4-eq19-22" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. 约束最小二乘 (Eq.19-22)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="4. 约束最小二乘 (Eq.19-22)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#41-kkt" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.1 KKT 系统
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#42" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4.2 求解
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#5-eq23" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5. 自适应细分 (Eq.23)
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="5. 自适应细分 (Eq.23)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#51-mse" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.1 MSE 误差准则
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#52" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.2 细分策略
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#53" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        5.3 分段策略的优势
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#6" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        6. 代码实现
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#_1" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        总结
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="eq11-23">进给校正多项式推导 (Eq.11-23)<a class="headerlink" href="#eq11-23" title="Permanent link">&para;</a></h1>
+<p>本文档详细推导 9 阶进给校正多项式的数学原理，这是实现 C³ 连续弧长参数化的核心。</p>
+<h2 id="1">1. 问题定义<a class="headerlink" href="#1" title="Permanent link">&para;</a></h2>
+<h3 id="11">1.1 弧长参数化目标<a class="headerlink" href="#11" title="Permanent link">&para;</a></h3>
+<p>给定 B 样条曲线 <span class="arithmatex">\(\mathbf{P}(u)\)</span>，我们需要找到映射 <span class="arithmatex">\(u(l)\)</span>，使得：</p>
+<div class="arithmatex">\[\mathbf{P}(u(l))\]</div>
+<p>是弧长 <span class="arithmatex">\(l\)</span> 的函数，且满足 C³ 连续性。</p>
+<h3 id="12-c3">1.2 为什么需要 C³ 连续<a class="headerlink" href="#12-c3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>连续性等级</th>
+<th>物理意义</th>
+<th>影响</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>C⁰</td>
+<td>位置连续</td>
+<td>轨迹无跳变</td>
+</tr>
+<tr>
+<td>C¹</td>
+<td>速度连续</td>
+<td>无速度突变</td>
+</tr>
+<tr>
+<td>C²</td>
+<td>加速度连续</td>
+<td>无加速度突变</td>
+</tr>
+<tr>
+<td><strong>C³</strong></td>
+<td><strong>Jerk 连续</strong></td>
+<td><strong>减少机床振动</strong></td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-9-eq11-13">2. 9 阶多项式形式 (Eq.11-13)<a class="headerlink" href="#2-9-eq11-13" title="Permanent link">&para;</a></h2>
+<h3 id="21">2.1 归一化形式<a class="headerlink" href="#21" title="Permanent link">&para;</a></h3>
+<p>在区间 <span class="arithmatex">\([0, S]\)</span> 上，定义归一化变量 <span class="arithmatex">\(\sigma = l/S\)</span>，9 阶多项式为：</p>
+<div class="arithmatex">\[u(\sigma) = \sum_{i=0}^{9} a_i \sigma^i \tag{Eq.11}\]</div>
+<p>其中 <span class="arithmatex">\(\sigma \in [0, 1]\)</span>，<span class="arithmatex">\(u \in [u_{start}, u_{end}]\)</span>。</p>
+<h3 id="22-eq12-13">2.2 矩阵形式 (Eq.12-13)<a class="headerlink" href="#22-eq12-13" title="Permanent link">&para;</a></h3>
+<p>设采样点 <span class="arithmatex">\(\{(\sigma_k, u_k)\}_{k=0}^{M-1}\)</span>，构造 Vandermonde 矩阵：</p>
+<div class="arithmatex">\[\mathbf{\Phi} = \begin{bmatrix}
+\sigma_0^9 &amp; \sigma_0^8 &amp; \cdots &amp; \sigma_0 &amp; 1 \\
+\sigma_1^9 &amp; \sigma_1^8 &amp; \cdots &amp; \sigma_1 &amp; 1 \\
+\vdots &amp; \vdots &amp; \ddots &amp; \vdots &amp; \vdots \\
+\sigma_{M-1}^9 &amp; \sigma_{M-1}^8 &amp; \cdots &amp; \sigma_{M-1} &amp; 1
+\end{bmatrix} \tag{Eq.12}\]</div>
+<p>最小二乘目标：</p>
+<div class="arithmatex">\[\min_{\mathbf{a}} \|\mathbf{\Phi} \mathbf{a} - \mathbf{u}\|^2 \tag{Eq.13}\]</div>
+<h2 id="3-c3-eq14-18">3. C³ 边界条件 (Eq.14-18)<a class="headerlink" href="#3-c3-eq14-18" title="Permanent link">&para;</a></h2>
+<h3 id="31">3.1 导数关系推导<a class="headerlink" href="#31" title="Permanent link">&para;</a></h3>
+<p>设 <span class="arithmatex">\(f(u) = \|\mathbf{P}'(u)\|\)</span>，由弧长微分 <span class="arithmatex">\(dl = f(u) du\)</span>，得：</p>
+<div class="arithmatex">\[\frac{du}{dl} = \frac{1}{f(u)} \tag{Eq.14}\]</div>
+<p>对 <span class="arithmatex">\(l\)</span> 求导：</p>
+<div class="arithmatex">\[\frac{d^2u}{dl^2} = -\frac{f'(u)}{f(u)^3} \tag{Eq.15}\]</div>
+<div class="arithmatex">\[\frac{d^3u}{dl^3} = \frac{3f'(u)^2 - f''(u)f(u)}{f(u)^5} \tag{Eq.16}\]</div>
+<h3 id="32">3.2 边界约束<a class="headerlink" href="#32" title="Permanent link">&para;</a></h3>
+<p>在 <span class="arithmatex">\(l = 0\)</span>（<span class="arithmatex">\(\sigma = 0\)</span>）和 <span class="arithmatex">\(l = S\)</span>（<span class="arithmatex">\(\sigma = 1\)</span>）处，多项式必须满足：</p>
+<table>
+<thead>
+<tr>
+<th>约束</th>
+<th><span class="arithmatex">\(\sigma = 0\)</span></th>
+<th><span class="arithmatex">\(\sigma = 1\)</span></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>值</td>
+<td><span class="arithmatex">\(u(0) = u_{start}\)</span></td>
+<td><span class="arithmatex">\(u(1) = u_{end}\)</span></td>
+</tr>
+<tr>
+<td>一阶导</td>
+<td><span class="arithmatex">\(u'(0) = u_l(0) \cdot S\)</span></td>
+<td><span class="arithmatex">\(u'(1) = u_l(1) \cdot S\)</span></td>
+</tr>
+<tr>
+<td>二阶导</td>
+<td><span class="arithmatex">\(u''(0) = u_{ll}(0) \cdot S^2\)</span></td>
+<td><span class="arithmatex">\(u''(1) = u_{ll}(1) \cdot S^2\)</span></td>
+</tr>
+<tr>
+<td>三阶导</td>
+<td><span class="arithmatex">\(u'''(0) = u_{lll}(0) \cdot S^3\)</span></td>
+<td><span class="arithmatex">\(u'''(1) = u_{lll}(1) \cdot S^3\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>其中 <span class="arithmatex">\(u_l, u_{ll}, u_{lll}\)</span> 由 (Eq.14-16) 计算。</p>
+<h3 id="33-eq17-18">3.3 约束矩阵构造 (Eq.17-18)<a class="headerlink" href="#33-eq17-18" title="Permanent link">&para;</a></h3>
+<p>8 个约束可写成矩阵形式：</p>
+<div class="arithmatex">\[\mathbf{\Omega} \mathbf{a} = \mathbf{\eta} \tag{Eq.17}\]</div>
+<p>其中 <span class="arithmatex">\(\mathbf{\Omega}\)</span> 是 <span class="arithmatex">\(8 \times 10\)</span> 约束矩阵：</p>
+<div class="arithmatex">\[\mathbf{\Omega} = \begin{bmatrix}
+0 &amp; 0 &amp; \cdots &amp; 0 &amp; 1 &amp; \leftarrow u(0) \\
+0 &amp; 0 &amp; \cdots &amp; 1 &amp; 0 &amp; \leftarrow u'(0) \\
+0 &amp; 0 &amp; \cdots &amp; 2 &amp; 0 &amp; 0 &amp; \leftarrow u''(0) \\
+0 &amp; \cdots &amp; 6 &amp; 0 &amp; 0 &amp; 0 &amp; \leftarrow u'''(0) \\
+1 &amp; 1 &amp; \cdots &amp; 1 &amp; 1 &amp; \leftarrow u(1) \\
+9 &amp; 8 &amp; \cdots &amp; 1 &amp; 0 &amp; \leftarrow u'(1) \\
+72 &amp; 56 &amp; \cdots &amp; 2 &amp; 0 &amp; \leftarrow u''(1) \\
+504 &amp; 336 &amp; \cdots &amp; 6 &amp; 0 &amp; \leftarrow u'''(1)
+\end{bmatrix} \tag{Eq.18}\]</div>
+<h2 id="4-eq19-22">4. 约束最小二乘 (Eq.19-22)<a class="headerlink" href="#4-eq19-22" title="Permanent link">&para;</a></h2>
+<h3 id="41-kkt">4.1 KKT 系统<a class="headerlink" href="#41-kkt" title="Permanent link">&para;</a></h3>
+<p>约束最小二乘问题：</p>
+<div class="arithmatex">\[\min_{\mathbf{a}} \|\mathbf{\Phi} \mathbf{a} - \mathbf{u}\|^2 \quad \text{s.t.} \quad \mathbf{\Omega} \mathbf{a} = \mathbf{\eta} \tag{Eq.19}\]</div>
+<p>引入拉格朗日乘子 <span class="arithmatex">\(\mathbf{\lambda}\)</span>，KKT 条件为：</p>
+<div class="arithmatex">\[\begin{bmatrix}
+\mathbf{\Phi}^T \mathbf{\Phi} &amp; \mathbf{\Omega}^T \\
+\mathbf{\Omega} &amp; \mathbf{0}
+\end{bmatrix}
+\begin{bmatrix}
+\mathbf{a} \\
+\mathbf{\lambda}
+\end{bmatrix}
+=
+\begin{bmatrix}
+\mathbf{\Phi}^T \mathbf{u} \\
+\mathbf{\eta}
+\end{bmatrix} \tag{Eq.20-22}\]</div>
+<h3 id="42">4.2 求解<a class="headerlink" href="#42" title="Permanent link">&para;</a></h3>
+<p>求解 <span class="arithmatex">\(18 \times 18\)</span> 线性系统得到系数 <span class="arithmatex">\(\mathbf{a}\)</span>。</p>
+<h2 id="5-eq23">5. 自适应细分 (Eq.23)<a class="headerlink" href="#5-eq23" title="Permanent link">&para;</a></h2>
+<h3 id="51-mse">5.1 MSE 误差准则<a class="headerlink" href="#51-mse" title="Permanent link">&para;</a></h3>
+<p>拟合后计算均方误差：</p>
+<div class="arithmatex">\[\text{MSE} = \frac{1}{M} \sum_{k=0}^{M-1} (u(\sigma_k) - u_k)^2 \tag{Eq.23}\]</div>
+<h3 id="52">5.2 细分策略<a class="headerlink" href="#52" title="Permanent link">&para;</a></h3>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>fit_segment(start, end):
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>    arc_lengths = arc_table[start:end+1]
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a>    u_values = u_table[start:end+1]
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    poly = fit_polynomial(arc_lengths, u_values)
+<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    mse = compute_mse(poly, arc_lengths, u_values)
+<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a>
+<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>    if mse &lt; tolerance:
+<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a>        return [poly]
+<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a>    else:
+<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>        mid = (start + end) // 2
+<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>        return fit_segment(start, mid) + fit_segment(mid, end)
+</code></pre></div>
+<h3 id="53">5.3 分段策略的优势<a class="headerlink" href="#53" title="Permanent link">&para;</a></h3>
+<ul>
+<li>曲率平缓区域：单段多项式足够</li>
+<li>曲率剧烈区域：自动细分保证精度</li>
+<li>整体保持 C³ 连续（边界条件约束）</li>
+</ul>
+<h2 id="6">6. 代码实现<a class="headerlink" href="#6" title="Permanent link">&para;</a></h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="k">def</span><span class="w"> </span><span class="nf">compute_derivatives_at_u</span><span class="p">(</span><span class="n">spline</span><span class="p">,</span> <span class="n">u</span><span class="p">,</span> <span class="n">S</span><span class="p">):</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;计算边界导数 (Eq.14-16)&quot;&quot;&quot;</span>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a>    <span class="n">spline_d1</span> <span class="o">=</span> <span class="n">spline</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a>    <span class="n">spline_d2</span> <span class="o">=</span> <span class="n">spline</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a>    <span class="n">spline_d3</span> <span class="o">=</span> <span class="n">spline</span><span class="o">.</span><span class="n">derivative</span><span class="p">(</span><span class="mi">3</span><span class="p">)</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a>    <span class="n">P1</span> <span class="o">=</span> <span class="n">spline_d1</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>    <span class="n">P2</span> <span class="o">=</span> <span class="n">spline_d2</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a>    <span class="n">P3</span> <span class="o">=</span> <span class="n">spline_d3</span><span class="p">(</span><span class="n">u</span><span class="p">)</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a>
+<a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a>    <span class="n">f</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">norm</span><span class="p">(</span><span class="n">P1</span><span class="p">)</span>
+<a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a>    <span class="k">if</span> <span class="n">f</span> <span class="o">&lt;</span> <span class="mf">1e-12</span><span class="p">:</span>
+<a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a>        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">S</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">])</span>
+<a id="__codelineno-1-14" name="__codelineno-1-14" href="#__codelineno-1-14"></a>
+<a id="__codelineno-1-15" name="__codelineno-1-15" href="#__codelineno-1-15"></a>    <span class="n">fp</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">P1</span><span class="p">,</span> <span class="n">P2</span><span class="p">)</span> <span class="o">/</span> <span class="n">f</span>
+<a id="__codelineno-1-16" name="__codelineno-1-16" href="#__codelineno-1-16"></a>    <span class="n">fpp</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">P2</span><span class="p">,</span> <span class="n">P2</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">P1</span><span class="p">,</span> <span class="n">P3</span><span class="p">)</span> <span class="o">-</span> <span class="n">fp</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">f</span>
+<a id="__codelineno-1-17" name="__codelineno-1-17" href="#__codelineno-1-17"></a>
+<a id="__codelineno-1-18" name="__codelineno-1-18" href="#__codelineno-1-18"></a>    <span class="n">u_l</span> <span class="o">=</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">f</span>
+<a id="__codelineno-1-19" name="__codelineno-1-19" href="#__codelineno-1-19"></a>    <span class="n">u_ll</span> <span class="o">=</span> <span class="o">-</span><span class="n">fp</span> <span class="o">/</span> <span class="n">f</span><span class="o">**</span><span class="mi">3</span>
+<a id="__codelineno-1-20" name="__codelineno-1-20" href="#__codelineno-1-20"></a>    <span class="n">u_lll</span> <span class="o">=</span> <span class="p">(</span><span class="mi">3</span><span class="o">*</span><span class="n">fp</span><span class="o">**</span><span class="mi">2</span> <span class="o">-</span> <span class="n">fpp</span><span class="o">*</span><span class="n">f</span><span class="p">)</span> <span class="o">/</span> <span class="n">f</span><span class="o">**</span><span class="mi">5</span>
+<a id="__codelineno-1-21" name="__codelineno-1-21" href="#__codelineno-1-21"></a>
+<a id="__codelineno-1-22" name="__codelineno-1-22" href="#__codelineno-1-22"></a>    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">u_l</span> <span class="o">*</span> <span class="n">S</span><span class="p">,</span> <span class="n">u_ll</span> <span class="o">*</span> <span class="n">S</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">u_lll</span> <span class="o">*</span> <span class="n">S</span><span class="o">**</span><span class="mi">3</span><span class="p">])</span>
+<a id="__codelineno-1-23" name="__codelineno-1-23" href="#__codelineno-1-23"></a>
+<a id="__codelineno-1-24" name="__codelineno-1-24" href="#__codelineno-1-24"></a><span class="k">def</span><span class="w"> </span><span class="nf">fit_feed_correction_polynomial</span><span class="p">(</span><span class="n">arc_lengths</span><span class="p">,</span> <span class="n">u_values</span><span class="p">,</span> <span class="n">spline</span><span class="p">):</span>
+<a id="__codelineno-1-25" name="__codelineno-1-25" href="#__codelineno-1-25"></a><span class="w">    </span><span class="sd">&quot;&quot;&quot;拟合 9 阶进给校正多项式 (Eq.11-22)&quot;&quot;&quot;</span>
+<a id="__codelineno-1-26" name="__codelineno-1-26" href="#__codelineno-1-26"></a>    <span class="n">S</span> <span class="o">=</span> <span class="n">arc_lengths</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+<a id="__codelineno-1-27" name="__codelineno-1-27" href="#__codelineno-1-27"></a>    <span class="n">sigma</span> <span class="o">=</span> <span class="n">arc_lengths</span> <span class="o">/</span> <span class="n">S</span>
+<a id="__codelineno-1-28" name="__codelineno-1-28" href="#__codelineno-1-28"></a>
+<a id="__codelineno-1-29" name="__codelineno-1-29" href="#__codelineno-1-29"></a>    <span class="c1"># Vandermonde 矩阵</span>
+<a id="__codelineno-1-30" name="__codelineno-1-30" href="#__codelineno-1-30"></a>    <span class="n">powers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+<a id="__codelineno-1-31" name="__codelineno-1-31" href="#__codelineno-1-31"></a>    <span class="n">Phi</span> <span class="o">=</span> <span class="n">sigma</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">]</span> <span class="o">**</span> <span class="n">powers</span>
+<a id="__codelineno-1-32" name="__codelineno-1-32" href="#__codelineno-1-32"></a>
+<a id="__codelineno-1-33" name="__codelineno-1-33" href="#__codelineno-1-33"></a>    <span class="c1"># 边界导数</span>
+<a id="__codelineno-1-34" name="__codelineno-1-34" href="#__codelineno-1-34"></a>    <span class="n">derivs_0</span> <span class="o">=</span> <span class="n">compute_derivatives_at_u</span><span class="p">(</span><span class="n">spline</span><span class="p">,</span> <span class="n">u_values</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">S</span><span class="p">)</span>
+<a id="__codelineno-1-35" name="__codelineno-1-35" href="#__codelineno-1-35"></a>    <span class="n">derivs_1</span> <span class="o">=</span> <span class="n">compute_derivatives_at_u</span><span class="p">(</span><span class="n">spline</span><span class="p">,</span> <span class="n">u_values</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">S</span><span class="p">)</span>
+<a id="__codelineno-1-36" name="__codelineno-1-36" href="#__codelineno-1-36"></a>
+<a id="__codelineno-1-37" name="__codelineno-1-37" href="#__codelineno-1-37"></a>    <span class="c1"># 约束矩阵</span>
+<a id="__codelineno-1-38" name="__codelineno-1-38" href="#__codelineno-1-38"></a>    <span class="n">Omega</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">8</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<a id="__codelineno-1-39" name="__codelineno-1-39" href="#__codelineno-1-39"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">9</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># u(0)</span>
+<a id="__codelineno-1-40" name="__codelineno-1-40" href="#__codelineno-1-40"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># u&#39;(0)</span>
+<a id="__codelineno-1-41" name="__codelineno-1-41" href="#__codelineno-1-41"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="mi">7</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>  <span class="c1"># u&#39;&#39;(0)</span>
+<a id="__codelineno-1-42" name="__codelineno-1-42" href="#__codelineno-1-42"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="mi">6</span><span class="p">]</span> <span class="o">=</span> <span class="mi">6</span>  <span class="c1"># u&#39;&#39;&#39;(0)</span>
+<a id="__codelineno-1-43" name="__codelineno-1-43" href="#__codelineno-1-43"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mi">1</span>  <span class="c1"># u(1)</span>
+<a id="__codelineno-1-44" name="__codelineno-1-44" href="#__codelineno-1-44"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># u&#39;(1)</span>
+<a id="__codelineno-1-45" name="__codelineno-1-45" href="#__codelineno-1-45"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">6</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">72</span><span class="p">,</span> <span class="mi">56</span><span class="p">,</span> <span class="mi">42</span><span class="p">,</span> <span class="mi">30</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># u&#39;&#39;(1)</span>
+<a id="__codelineno-1-46" name="__codelineno-1-46" href="#__codelineno-1-46"></a>    <span class="n">Omega</span><span class="p">[</span><span class="mi">7</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="p">[</span><span class="mi">504</span><span class="p">,</span> <span class="mi">336</span><span class="p">,</span> <span class="mi">210</span><span class="p">,</span> <span class="mi">120</span><span class="p">,</span> <span class="mi">60</span><span class="p">,</span> <span class="mi">24</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># u&#39;&#39;&#39;(1)</span>
+<a id="__codelineno-1-47" name="__codelineno-1-47" href="#__codelineno-1-47"></a>
+<a id="__codelineno-1-48" name="__codelineno-1-48" href="#__codelineno-1-48"></a>    <span class="c1"># 右侧向量</span>
+<a id="__codelineno-1-49" name="__codelineno-1-49" href="#__codelineno-1-49"></a>    <span class="n">eta</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="n">derivs_0</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">derivs_0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">derivs_0</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span>
+<a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>                    <span class="mi">1</span><span class="p">,</span> <span class="n">derivs_1</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">derivs_1</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">derivs_1</span><span class="p">[</span><span class="mi">2</span><span class="p">]])</span>
+<a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>
+<a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>    <span class="c1"># KKT 系统</span>
+<a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>    <span class="n">KKT</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">18</span><span class="p">,</span> <span class="mi">18</span><span class="p">))</span>
+<a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>    <span class="n">KKT</span><span class="p">[:</span><span class="mi">10</span><span class="p">,</span> <span class="p">:</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">Phi</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">Phi</span>
+<a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>    <span class="n">KKT</span><span class="p">[:</span><span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">:]</span> <span class="o">=</span> <span class="n">Omega</span><span class="o">.</span><span class="n">T</span>
+<a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>    <span class="n">KKT</span><span class="p">[</span><span class="mi">10</span><span class="p">:,</span> <span class="p">:</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">Omega</span>
+<a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>
+<a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>    <span class="n">rhs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="mi">18</span><span class="p">)</span>
+<a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>    <span class="n">rhs</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span> <span class="o">=</span> <span class="n">Phi</span><span class="o">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">u_values</span>
+<a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>    <span class="n">rhs</span><span class="p">[</span><span class="mi">10</span><span class="p">:]</span> <span class="o">=</span> <span class="n">eta</span>
+<a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>
+<a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>    <span class="n">solution</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">solve</span><span class="p">(</span><span class="n">KKT</span><span class="p">,</span> <span class="n">rhs</span><span class="p">)</span>
+<a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>    <span class="n">coeffs</span> <span class="o">=</span> <span class="n">solution</span><span class="p">[:</span><span class="mi">10</span><span class="p">]</span>
+<a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>
+<a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>    <span class="k">return</span> <span class="n">coeffs</span>
+</code></pre></div>
+<h2 id="_1">总结<a class="headerlink" href="#_1" title="Permanent link">&para;</a></h2>
+<p>9 阶进给校正多项式通过约束最小二乘法，在满足 C³ 边界条件的前提下拟合 <span class="arithmatex">\(u(l)\)</span> 映射。自适应细分策略确保在曲率变化剧烈处也能保持高精度。这是实现 C³ 连续弧长参数化的核心算法。</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "content.code.copy", "content.code.annotate"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "\u5df2\u590d\u5236", "clipboard.copy": "\u590d\u5236", "search.result.more.one": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.more.other": "\u5728\u8be5\u9875\u4e0a\u8fd8\u6709 # \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.none": "\u6ca1\u6709\u627e\u5230\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.one": "\u627e\u5230 1 \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.other": "# \u4e2a\u7b26\u5408\u6761\u4ef6\u7684\u7ed3\u679c", "search.result.placeholder": "\u952e\u5165\u4ee5\u5f00\u59cb\u641c\u7d22", "search.result.term.missing": "\u7f3a\u5c11", "select.version": "\u9009\u62e9\u5f53\u524d\u7248\u672c"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+      
+    
+  </body>
+</html>
