@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cnc_five_axis_interpolation"
+version = "0.1.0"
+description = "C³-continuous five-axis CNC trajectory generation"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+dependencies = [
+    "numpy",
+    "scipy",
+]
+
+[project.optional-dependencies]
+test = ["pytest"]
+docs = ["mkdocs", "mkdocs-material", "mkdocs-jupyter"]
+
+[tool.setuptools]
+packages = ["cnc_five_axis_interpolation"]
+package-dir = {"cnc_five_axis_interpolation" = "."}
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
