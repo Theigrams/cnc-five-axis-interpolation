@@ -36,6 +36,8 @@ def adaptive_simpson(
     b: float,
     tol: float = 1e-8,
     intervals: list | None = None,
+    max_depth: int = 50,
+    _depth: int = 0,
 ) -> float:
     """
     自适应Simpson积分法。
@@ -49,6 +51,8 @@ def adaptive_simpson(
         b: 积分上限
         tol: 误差容差
         intervals: 可选，用于记录最终的积分区间
+        max_depth: 最大递归深度，防止栈溢出
+        _depth: 内部使用，当前递归深度
 
     Returns:
         积分值
@@ -58,13 +62,13 @@ def adaptive_simpson(
     S_ac = simpson(f, a, c)
     S_cb = simpson(f, c, b)
 
-    if abs(S_ac + S_cb - S_ab) < tol:
+    if abs(S_ac + S_cb - S_ab) < tol or _depth >= max_depth:
         if intervals is not None:
             intervals.append((a, b, S_ac + S_cb))
         return S_ac + S_cb
     else:
-        left = adaptive_simpson(f, a, c, tol / 2, intervals)
-        right = adaptive_simpson(f, c, b, tol / 2, intervals)
+        left = adaptive_simpson(f, a, c, tol / 2, intervals, max_depth, _depth + 1)
+        right = adaptive_simpson(f, c, b, tol / 2, intervals, max_depth, _depth + 1)
         return left + right
 
 

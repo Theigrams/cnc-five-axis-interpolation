@@ -45,3 +45,7 @@ htmlcov/
 # OS
 .DS_Store
 Thumbs.db
+
+# MkDocs
+site/
+.claude/

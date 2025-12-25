@@ -1,0 +1,57 @@
+site_name: cnc_five_axis_interpolation
+site_description: "Yuen et al. (2013) C³ Five-Axis Trajectory Generation"
+
+docs_dir: docs
+site_dir: site
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.sections
+    - navigation.expand
+    - content.code.copy
+    - content.code.annotate
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+
+plugins:
+  - search
+  - mkdocs-jupyter:
+      include_source: true
+      execute: false
+      ignore_h1_titles: true
+
+markdown_extensions:
+  - admonition
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.details
+  - tables
+  - toc:
+      permalink: true
+
+extra_javascript:
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+nav:
+  - 首页: README.md
+  - 教程:
+      - 位置样条: notebooks/01_position_spline.ipynb
+      - 姿态样条: notebooks/02_orientation_spline.ipynb
+      - 逆运动学: notebooks/03_inverse_kinematics.ipynb
+      - 端到端示例: notebooks/04_end_to_end_example.ipynb
+  - 数学推导:
+      - B样条插值 (Eq.1-7): theory/bspline_interpolation.md
+      - 弧长参数化 (Eq.8-10): theory/arc_length_parameterization.md
+      - 进给校正多项式 (Eq.11-23): theory/feed_correction_polynomial.md
+      - 球坐标姿态 (Eq.25-31): theory/spherical_orientation.md
+      - Bézier重参数化 (Eq.32-41): theory/bezier_reparameterization.md
+      - A-C逆运动学 (Eq.42): theory/ac_kinematics.md

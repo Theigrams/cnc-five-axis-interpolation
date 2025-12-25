@@ -5,9 +5,9 @@ orientation_spline 模块单元测试
 import numpy as np
 import pytest
 
+from cnc_five_axis_interpolation.core.bspline import angular_parameterization
 from cnc_five_axis_interpolation.core.orientation_spline import (
     OrientationSpline,
-    angular_parameterization,
     evaluate_orientation_from_spherical,
     fit_orientation_bspline,
     BezierReparameterization,
@@ -154,6 +154,60 @@ class TestOrientationSpline:
 
         norms = np.linalg.norm(ori_samples, axis=1)
         np.testing.assert_allclose(norms, 1.0, atol=1e-10)
+
+
+class TestEdgeCases:
+    """边界情况测试"""
+
+    def test_constant_orientation(self):
+        """测试恒定姿态"""
+        orientations = np.array([[0, 0, 1]] * 8, dtype=float)
+        arc_lengths = np.linspace(0, 100, 8)
+
+        spline = OrientationSpline(orientations, arc_lengths)
+        spline.fit()
+
+        # 所有位置应返回相同姿态
+        for l in [0, 50, 100]:
+            ori = spline.evaluate(l)
+            np.testing.assert_allclose(ori, [0, 0, 1], atol=1e-3)
+
+    def test_arc_length_clipping(self):
+        """测试弧长裁剪"""
+        t = np.linspace(0, np.pi / 4, 8)
+        orientations = np.column_stack([
+            np.sin(t), np.zeros_like(t), np.cos(t)
+        ])
+        arc_lengths = np.linspace(0, 100, 8)
+
+        spline = OrientationSpline(orientations, arc_lengths)
+        spline.fit()
+
+        # 负弧长应返回起点姿态
+        ori_neg = spline.evaluate(-10)
+        np.testing.assert_allclose(ori_neg, orientations[0], atol=1e-3)
+
+        # 超长弧长应返回终点姿态
+        ori_over = spline.evaluate(200)
+        np.testing.assert_allclose(ori_over, orientations[-1], atol=1e-3)
+
+    def test_batch_consistency(self):
+        """测试批量评估与单点评估一致性"""
+        t = np.linspace(0, np.pi / 3, 10)
+        orientations = np.column_stack([
+            np.sin(t), np.zeros_like(t), np.cos(t)
+        ])
+        arc_lengths = np.linspace(0, 100, 10)
+
+        spline = OrientationSpline(orientations, arc_lengths)
+        spline.fit()
+
+        l_values = np.array([0, 25, 50, 75, 100])
+        batch_results = spline.evaluate_batch(l_values)
+
+        for i, l in enumerate(l_values):
+            single_result = spline.evaluate(l)
+            np.testing.assert_allclose(batch_results[i], single_result, atol=1e-10)
 
 
 class TestWithRealData:

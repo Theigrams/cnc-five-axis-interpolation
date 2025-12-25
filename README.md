@@ -1,5 +1,9 @@
 # cnc_five_axis_interpolation
 
+[![Tests](https://github.com/Theigrams/cnc-five-axis-interpolation/actions/workflows/test.yml/badge.svg)](https://github.com/Theigrams/cnc-five-axis-interpolation/actions/workflows/test.yml)
+[![Documentation](https://img.shields.io/badge/docs-gh--pages-blue)](https://Theigrams.github.io/cnc-five-axis-interpolation/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue)](https://www.python.org/downloads/)
+
 Python implementation of the C³-continuous five-axis trajectory generation algorithm from:
 
 > Yuen, Zhang, Altintas (2013), *Smooth trajectory generation for five-axis machine tools*, International Journal of Machine Tools & Manufacture.
@@ -9,6 +13,8 @@ This project generates smooth five-axis toolpaths by **decoupling**:
 - **Tool orientation**: Quintic B-spline in spherical coordinates + 7th-order Bézier reparameterization
 
 It also provides **A-C configuration inverse kinematics** mapping to machine coordinates `(X, Y, Z, A, C)`.
+
+**[📖 Full Documentation](https://Theigrams.github.io/cnc-five-axis-interpolation/)**
 
 ---
 
@@ -56,10 +62,14 @@ It also provides **A-C configuration inverse kinematics** mapping to machine coo
 
 ```bash
 # Clone and navigate to project
-cd cnc_five_axis_interpolation
+git clone https://github.com/Theigrams/cnc-five-axis-interpolation.git
+cd cnc-five-axis-interpolation
 
 # Install dependencies
-pip install numpy scipy
+python -m pip install numpy scipy
+
+# (optional) Install test dependencies
+python -m pip install pytest
 
 # Add parent directory to PYTHONPATH
 export PYTHONPATH="$PYTHONPATH:$(pwd)/.."
@@ -181,18 +191,18 @@ XYZ, A, C = inverse_kinematics_ac(P, O, L_ac_z=70.0, L_Tya_z=150.0)
 
 | Paper Equation | Topic | Code Location |
 |----------------|-------|---------------|
-| Eq.1-7 | Quintic B-spline interpolation | `position_spline.fit_quintic_bspline` |
-| Eq.4 | Centripetal parameterization | `position_spline.centripetal_parameterization` |
-| Eq.5 | Knot vector computation | `position_spline.compute_knot_vector` |
-| Eq.8-10 | Adaptive Simpson integration | `utils/integrals.adaptive_simpson` |
-| Eq.11-22 | 9th-degree feed correction | `position_spline.fit_feed_correction_polynomial` |
-| Eq.23 | Adaptive subdivision | `position_spline._fit_feed_correction_adaptive` |
-| Eq.25 | Cartesian → Spherical | `utils/geometry.cartesian_to_spherical` |
-| Eq.26-30 | Orientation B-spline | `orientation_spline.fit_orientation_bspline` |
-| Eq.28 | Angular parameterization | `orientation_spline.angular_parameterization` |
-| Eq.31 | Spherical → Cartesian | `utils/geometry.spherical_to_cartesian` |
-| Eq.32-41 | Bézier reparameterization | `orientation_spline.BezierReparameterization` |
-| Eq.42 | A-C inverse kinematics | `kinematics.inverse_kinematics_ac` |
+| Eq.1-7 | Quintic B-spline interpolation | `core.bspline.fit_quintic_bspline` |
+| Eq.4 | Centripetal parameterization | `core.bspline.centripetal_parameterization` |
+| Eq.5 | Knot vector computation | `core.bspline.compute_knot_vector` |
+| Eq.8-10 | Adaptive Simpson integration | `utils.integrals.adaptive_simpson` |
+| Eq.11-22 | 9th-degree feed correction | `core.position_spline.fit_feed_correction_polynomial` |
+| Eq.23 | Adaptive subdivision | `core.position_spline.PositionSpline._fit_feed_correction_adaptive` |
+| Eq.25 | Cartesian → Spherical | `utils.geometry.cartesian_to_spherical` |
+| Eq.26-30 | Orientation B-spline | `core.orientation_spline.fit_orientation_bspline` |
+| Eq.28 | Angular parameterization | `core.bspline.angular_parameterization` |
+| Eq.31 | Spherical → Cartesian | `utils.geometry.spherical_to_cartesian` |
+| Eq.32-41 | Bézier reparameterization | `core.orientation_spline.BezierReparameterization` |
+| Eq.42 | A-C inverse kinematics | `core.kinematics.inverse_kinematics_ac` |
 
 ---
 
@@ -200,11 +210,17 @@ XYZ, A, C = inverse_kinematics_ac(P, O, L_ac_z=70.0, L_Tya_z=150.0)
 
 ```bash
 # Run all tests
-python -m pytest cnc_five_axis_interpolation/tests/ -v
+python -m pytest tests/ -v
 
 # Run specific test module
-python -m pytest cnc_five_axis_interpolation/tests/test_position_spline.py -v
+python -m pytest tests/test_position_spline.py -v
 ```
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Please run `python -m pytest -v` before submitting changes.
 
 ---
 
@@ -213,6 +229,12 @@ python -m pytest cnc_five_axis_interpolation/tests/test_position_spline.py -v
 - Orientation reparameterization uses `scipy.optimize.minimize` (SLSQP) and falls back to initial feasible coefficients if optimization fails
 - Jerk objective in Bézier reparameterization is a practical surrogate (finite-difference style)
 - Inverse kinematics is specific to **A-C configuration** and its sign conventions
+
+---
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 

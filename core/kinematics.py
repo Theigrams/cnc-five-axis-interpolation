@@ -62,7 +62,7 @@ def batch_inverse_kinematics_ac(
     L_Tya_z: float = 150.0,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """
-    批量计算A-C配置逆运动学。
+    批量计算A-C配置逆运动学（向量化版本）。
 
     Args:
         positions: (N, 3) 刀尖位置数组
@@ -73,17 +73,20 @@ def batch_inverse_kinematics_ac(
         A: (N,) A轴角度
         C: (N,) C轴角度
     """
-    N = len(positions)
-    XYZ = np.zeros((N, 3))
-    A = np.zeros(N)
-    C = np.zeros(N)
+    P_x, P_y, P_z = positions[:, 0], positions[:, 1], positions[:, 2]
+    O_i, O_j, O_k = orientations[:, 0], orientations[:, 1], orientations[:, 2]
 
-    for i in range(N):
-        XYZ[i], A[i], C[i] = inverse_kinematics_ac(
-            positions[i], orientations[i], L_ac_z, L_Tya_z
-        )
+    A = np.arccos(np.clip(O_k, -1.0, 1.0))
+    C = np.arctan2(O_i, O_j)
 
-    return XYZ, A, C
+    cos_A, sin_A = np.cos(A), np.sin(A)
+    cos_C, sin_C = np.cos(C), np.sin(C)
+
+    X = -cos_C * P_x - sin_C * P_y
+    Y = cos_A * sin_C * P_x - cos_A * cos_C * P_y - sin_A * P_z - sin_A * L_ac_z
+    Z = sin_A * sin_C * P_x - sin_A * cos_C * P_y + cos_A * P_z + cos_A * L_ac_z + L_Tya_z
+
+    return np.column_stack([X, Y, Z]), A, C
 
 
 if __name__ == "__main__":

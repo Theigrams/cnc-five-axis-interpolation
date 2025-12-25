@@ -5,8 +5,8 @@ position_spline 模块单元测试
 import numpy as np
 import pytest
 
-from cnc_five_axis_interpolation.core.position_spline import (
-    PositionSpline,
+from cnc_five_axis_interpolation.core.position_spline import PositionSpline
+from cnc_five_axis_interpolation.core.bspline import (
     centripetal_parameterization,
     compute_knot_vector,
     fit_quintic_bspline,
@@ -137,6 +137,64 @@ class TestPositionSpline:
         positions = spline.evaluate_batch(l_values)
 
         assert positions.shape == (20, 3)
+
+
+class TestEdgeCases:
+    """边界情况测试"""
+
+    def test_minimum_points(self):
+        """测试最少点数（6点，五次B样条最小要求）"""
+        points = np.array([
+            [0, 0, 0], [1, 0, 0], [2, 1, 0],
+            [3, 1, 1], [4, 0, 1], [5, 0, 0]
+        ], dtype=float)
+        spline = PositionSpline(points)
+        spline.fit()
+        assert spline.length > 0
+        assert spline.spline is not None
+
+    def test_straight_line(self):
+        """测试直线路径"""
+        points = np.array([[i, 0, 0] for i in range(10)], dtype=float)
+        spline = PositionSpline(points)
+        spline.fit()
+        # 直线弧长应接近端点距离
+        expected_length = 9.0
+        np.testing.assert_allclose(spline.length, expected_length, rtol=1e-3)
+
+    def test_arc_length_clipping(self):
+        """测试弧长裁剪（超出范围）"""
+        points = np.array([
+            [0, 0, 0], [1, 1, 0], [2, 0, 0],
+            [3, 1, 0], [4, 0, 0], [5, 1, 0]
+        ], dtype=float)
+        spline = PositionSpline(points)
+        spline.fit()
+
+        # 负弧长应返回起点
+        pos_neg = spline.evaluate(-10)
+        np.testing.assert_allclose(pos_neg, points[0], atol=1e-6)
+
+        # 超长弧长应返回终点
+        pos_over = spline.evaluate(spline.length + 100)
+        np.testing.assert_allclose(pos_over, points[-1], atol=1e-6)
+
+    def test_batch_with_mixed_lengths(self):
+        """测试混合弧长批量评估"""
+        points = np.array([
+            [0, 0, 0], [1, 0, 0], [2, 1, 0],
+            [3, 1, 1], [4, 0, 1], [5, 0, 0]
+        ], dtype=float)
+        spline = PositionSpline(points)
+        spline.fit()
+
+        # 包含边界和超出范围的值
+        l_values = np.array([-1, 0, spline.length / 2, spline.length, spline.length + 1])
+        positions = spline.evaluate_batch(l_values)
+
+        assert positions.shape == (5, 3)
+        np.testing.assert_allclose(positions[0], positions[1], atol=1e-6)  # -1 和 0 相同
+        np.testing.assert_allclose(positions[3], positions[4], atol=1e-6)  # length 和 length+1 相同
 
 
 class TestWithRealData:

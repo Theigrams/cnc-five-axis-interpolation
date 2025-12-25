@@ -16,46 +16,7 @@ from scipy.interpolate import BSpline
 from scipy.optimize import minimize
 
 from ..utils.geometry import batch_cartesian_to_spherical, spherical_to_cartesian, unwrap_angles
-from .position_spline import centripetal_parameterization, compute_knot_vector, bspline_basis_matrix
-
-
-def angular_parameterization(orientations: np.ndarray) -> np.ndarray:
-    """
-    角度参数化方法 (Eq.28)。
-
-    使用相邻姿态向量之间角度变化的平方根来分配参数值。
-
-    Args:
-        orientations: (N, 3) 单位刀轴向量
-
-    Returns:
-        w_bar: (N,) 参数值数组, w_bar[0]=0, w_bar[-1]=1
-    """
-    N = len(orientations)
-    w_bar = np.zeros(N)
-
-    # 计算相邻姿态的角度变化 (Eq.28)
-    # angle_k = arccos(o_k · o_{k-1})
-    angles = []
-    for k in range(1, N):
-        dot = np.clip(np.dot(orientations[k], orientations[k - 1]), -1.0, 1.0)
-        angle = np.arccos(dot)
-        angles.append(angle)
-
-    sqrt_angles = np.sqrt(angles)
-    d2 = np.sum(sqrt_angles)
-
-    if d2 < 1e-12:
-        # 所有姿态相同，使用均匀参数化
-        return np.linspace(0, 1, N)
-
-    # 累积参数化
-    w_bar[0] = 0.0
-    for k in range(1, N):
-        w_bar[k] = w_bar[k - 1] + sqrt_angles[k - 1] / d2
-    w_bar[-1] = 1.0
-
-    return w_bar
+from .bspline import angular_parameterization, fit_interpolating_bspline
 
 
 def fit_orientation_bspline(orientations: np.ndarray) -> tuple[BSpline, np.ndarray, np.ndarray]:
@@ -72,31 +33,16 @@ def fit_orientation_bspline(orientations: np.ndarray) -> tuple[BSpline, np.ndarr
         knots: 节点向量
         w_bar: 参数值
     """
-    degree = 5
-
     # Step 1: 转换为球坐标 (Eq.25)
     theta, phi = batch_cartesian_to_spherical(orientations)
-
-    # 展开 φ 角避免 ±π 不连续
     phi = unwrap_angles(phi)
-
-    # 组合为2D点
     spherical_points = np.column_stack([theta, phi])
 
     # Step 2: 角度参数化 (Eq.28)
     w_bar = angular_parameterization(orientations)
 
-    # Step 3: 计算节点向量 (Eq.29)
-    knots = compute_knot_vector(w_bar, degree)
-
-    # Step 4: 构造基函数矩阵 (Eq.30)
-    Phi = bspline_basis_matrix(w_bar, knots, degree)
-
-    # Step 5: 求解控制点
-    control_points = np.linalg.solve(Phi, spherical_points)
-
-    # 创建 BSpline 对象
-    spline = BSpline(knots, control_points, degree)
+    # Step 3-5: 拟合B样条
+    spline, knots = fit_interpolating_bspline(spherical_points, w_bar, degree=5)
 
     return spline, knots, w_bar
 
@@ -117,7 +63,15 @@ def evaluate_orientation_from_spherical(spline: BSpline, w: float | np.ndarray) 
         theta, phi = theta_phi
         return spherical_to_cartesian(theta, phi)
     else:
-        return np.array([spherical_to_cartesian(tp[0], tp[1]) for tp in theta_phi])
+        # 向量化计算
+        theta = theta_phi[:, 0]
+        phi = theta_phi[:, 1]
+        sin_theta = np.sin(theta)
+        return np.column_stack([
+            sin_theta * np.cos(phi),
+            sin_theta * np.sin(phi),
+            np.cos(theta)
+        ])
 
 
 class BezierReparameterization:
@@ -157,7 +111,6 @@ class BezierReparameterization:
 
     def _initialize_coefficients(self):
         """初始化满足约束的控制系数 (Eq.41)。"""
-        N = self.N - 1
         l = self.l_values
         w = self.w_values
 
@@ -241,7 +194,7 @@ class BezierReparameterization:
             # 单调性约束 (Eq.36): Q_0 <= Q_1 <= ... <= Q_7
             for k in range(N):
 
-                def monotonicity_constraint(x, k=k, i=0):
+                def monotonicity_constraint(x, k=k):
                     Q = np.zeros(8)
                     Q[0] = w[k]
                     Q[7] = w[k + 1]
@@ -254,6 +207,7 @@ class BezierReparameterization:
             for k in range(N - 1):
 
                 def c1_constraint(x, k=k):
+                    """C¹ 连续：一阶导数连续"""
                     Q_k = np.zeros(8)
                     Q_k[0] = w[k]
                     Q_k[7] = w[k + 1]
@@ -270,12 +224,60 @@ class BezierReparameterization:
                     if dl_k < 1e-12 or dl_k1 < 1e-12:
                         return 0
 
-                    # C¹: (Q_7,k - Q_6,k)/dl_k = (Q_1,k+1 - Q_0,k+1)/dl_k+1
+                    # C¹: 7*(Q_7,k - Q_6,k)/dl_k = 7*(Q_1,k+1 - Q_0,k+1)/dl_k+1
                     lhs = (Q_k[7] - Q_k[6]) / dl_k
                     rhs = (Q_k1[1] - Q_k1[0]) / dl_k1
-                    return -(lhs - rhs) ** 2
+                    return lhs - rhs
+
+                def c2_constraint(x, k=k):
+                    """C² 连续：二阶导数连续"""
+                    Q_k = np.zeros(8)
+                    Q_k[0] = w[k]
+                    Q_k[7] = w[k + 1]
+                    Q_k[1:7] = x[k * 6 : (k + 1) * 6]
+
+                    Q_k1 = np.zeros(8)
+                    Q_k1[0] = w[k + 1]
+                    Q_k1[7] = w[k + 2]
+                    Q_k1[1:7] = x[(k + 1) * 6 : (k + 2) * 6]
+
+                    dl_k = l[k + 1] - l[k]
+                    dl_k1 = l[k + 2] - l[k + 1]
+
+                    if dl_k < 1e-12 or dl_k1 < 1e-12:
+                        return 0
+
+                    # C²: 二阶差分连续
+                    lhs = (Q_k[7] - 2 * Q_k[6] + Q_k[5]) / (dl_k**2)
+                    rhs = (Q_k1[2] - 2 * Q_k1[1] + Q_k1[0]) / (dl_k1**2)
+                    return lhs - rhs
+
+                def c3_constraint(x, k=k):
+                    """C³ 连续：三阶导数连续"""
+                    Q_k = np.zeros(8)
+                    Q_k[0] = w[k]
+                    Q_k[7] = w[k + 1]
+                    Q_k[1:7] = x[k * 6 : (k + 1) * 6]
+
+                    Q_k1 = np.zeros(8)
+                    Q_k1[0] = w[k + 1]
+                    Q_k1[7] = w[k + 2]
+                    Q_k1[1:7] = x[(k + 1) * 6 : (k + 2) * 6]
+
+                    dl_k = l[k + 1] - l[k]
+                    dl_k1 = l[k + 2] - l[k + 1]
+
+                    if dl_k < 1e-12 or dl_k1 < 1e-12:
+                        return 0
+
+                    # C³: 三阶差分连续
+                    lhs = (Q_k[7] - 3 * Q_k[6] + 3 * Q_k[5] - Q_k[4]) / (dl_k**3)
+                    rhs = (Q_k1[3] - 3 * Q_k1[2] + 3 * Q_k1[1] - Q_k1[0]) / (dl_k1**3)
+                    return lhs - rhs
 
                 constraints.append({"type": "eq", "fun": c1_constraint})
+                constraints.append({"type": "eq", "fun": c2_constraint})
+                constraints.append({"type": "eq", "fun": c3_constraint})
 
             return constraints
 
@@ -325,8 +327,44 @@ class BezierReparameterization:
         return self.w_values[-1]
 
     def evaluate_batch(self, l_values: np.ndarray) -> np.ndarray:
-        """批量评估。"""
-        return np.array([self(l) for l in l_values])
+        """批量评估（向量化版本）。"""
+        l_arr = np.clip(l_values, self.l_values[0], self.l_values[-1])
+        w = np.zeros_like(l_arr)
+
+        if len(self.Q) == 0:
+            return w
+
+        # 预计算 Bernstein 系数
+        binoms = np.array([math.comb(7, i) for i in range(8)])
+
+        # 找到每个 l 所属的段
+        segment_ends = self.l_values[1:]
+        indices = np.searchsorted(segment_ends, l_arr, side='left')
+        indices = np.clip(indices, 0, len(self.Q) - 1)
+
+        for k in range(len(self.Q)):
+            mask = indices == k
+            if not np.any(mask):
+                continue
+
+            l_k = self.l_values[k]
+            l_k1 = self.l_values[k + 1]
+            dl = l_k1 - l_k
+
+            if dl < 1e-12:
+                w[mask] = self.w_values[k]
+                continue
+
+            r = (l_arr[mask] - l_k) / dl
+            Q = self.Q[k]
+
+            # 向量化 Bernstein 多项式计算
+            r_col = r[:, np.newaxis]
+            powers = np.arange(8)
+            bernstein = binoms * ((1 - r_col) ** (7 - powers)) * (r_col ** powers)
+            w[mask] = bernstein @ Q
+
+        return w
 
 
 class OrientationSpline:
@@ -347,7 +385,7 @@ class OrientationSpline:
         """
         self.orientations = np.asarray(orientations)
         self.arc_lengths = np.asarray(arc_lengths)
-        self.total_length = arc_lengths[-1]
+        self.length = arc_lengths[-1]
         self.N = len(orientations)
 
         self.spline: BSpline | None = None
@@ -355,13 +393,20 @@ class OrientationSpline:
         self.w_bar: np.ndarray | None = None
         self.reparameterization: BezierReparameterization | None = None
 
+    @property
+    def total_length(self) -> float:
+        """兼容旧 API，返回 length。"""
+        return self.length
+
     def fit(self):
-        """拟合姿态样条和重参数化曲线。"""
+        """拟合姿态样条和重参数化曲线。返回 self 以支持链式调用。"""
         # Step 1: 拟合球坐标 B 样条
         self.spline, self.knots, self.w_bar = fit_orientation_bspline(self.orientations)
 
         # Step 2: 构建 Bézier 重参数化
         self.reparameterization = BezierReparameterization(self.arc_lengths, self.w_bar)
+
+        return self
 
     def get_w_from_length(self, l: float) -> float:
         """根据弧长获取样条参数 w。"""
@@ -384,7 +429,7 @@ class OrientationSpline:
 
     def evaluate_batch(self, l_values: np.ndarray) -> np.ndarray:
         """
-        批量在弧长处评估姿态。
+        批量在弧长处评估姿态（向量化版本）。
 
         Args:
             l_values: (M,) 弧长数组
@@ -392,7 +437,11 @@ class OrientationSpline:
         Returns:
             (M, 3) 姿态数组
         """
-        return np.array([self.evaluate(l) for l in l_values])
+        w_values = self.reparameterization.evaluate_batch(l_values)
+        orientations = evaluate_orientation_from_spherical(self.spline, w_values)
+        # 归一化
+        norms = np.linalg.norm(orientations, axis=1, keepdims=True)
+        return orientations / norms
 
 
 if __name__ == "__main__":

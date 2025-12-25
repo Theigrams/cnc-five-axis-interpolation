@@ -13,130 +13,7 @@ import numpy as np
 from scipy.interpolate import BSpline
 
 from ..utils.integrals import adaptive_simpson
-
-
-def centripetal_parameterization(points: np.ndarray) -> np.ndarray:
-    """
-    向心参数化方法 (Eq.4)。
-
-    使用相邻点距离的平方根来分配参数值，相比弦长参数化能产生更好的拟合效果。
-
-    Args:
-        points: (N, 3) 离散点坐标
-
-    Returns:
-        u_bar: (N,) 参数值数组, u_bar[0]=0, u_bar[-1]=1
-    """
-    N = len(points)
-    u_bar = np.zeros(N)
-
-    # 计算相邻点距离的平方根之和
-    sqrt_dists = np.sqrt(np.linalg.norm(np.diff(points, axis=0), axis=1))
-    d = np.sum(sqrt_dists)
-
-    if d < 1e-12:
-        # 所有点重合，使用均匀参数化
-        return np.linspace(0, 1, N)
-
-    # 累积参数化
-    u_bar[0] = 0.0
-    for k in range(1, N):
-        u_bar[k] = u_bar[k - 1] + sqrt_dists[k - 1] / d
-    u_bar[-1] = 1.0  # 确保端点精确
-
-    return u_bar
-
-
-def compute_knot_vector(u_bar: np.ndarray, degree: int) -> np.ndarray:
-    """
-    计算B样条节点向量 (Eq.5)。
-
-    使用均值法从参数值计算内部节点。
-
-    Args:
-        u_bar: (N,) 参数值数组
-        degree: 样条阶数 (n=5 for quintic)
-
-    Returns:
-        U: (N + degree + 1,) 节点向量
-    """
-    N = len(u_bar) - 1  # 点数为 N+1
-    n = degree
-    num_knots = N + n + 2  # 总节点数 = N + n + 1 + 1
-
-    U = np.zeros(num_knots)
-
-    # 端点节点重复 n+1 次
-    U[: n + 1] = 0.0
-    U[-(n + 1) :] = 1.0
-
-    # 内部节点使用均值法 (Eq.5)
-    for j in range(1, N - n + 1):
-        U[j + n] = np.mean(u_bar[j : j + n])
-
-    return U
-
-
-def bspline_basis_matrix(u_bar: np.ndarray, knots: np.ndarray, degree: int) -> np.ndarray:
-    """
-    计算B样条基函数矩阵 (Eq.6)。
-
-    构造 (N+1) x (N+1) 的基函数矩阵 Φ，用于求解控制点。
-
-    Args:
-        u_bar: (N+1,) 参数值
-        knots: 节点向量
-        degree: 样条阶数
-
-    Returns:
-        Phi: (N+1, N+1) 基函数矩阵
-    """
-    N = len(u_bar)
-    Phi = np.zeros((N, N))
-
-    for row, u in enumerate(u_bar):
-        # 使用 scipy 的 B 样条基函数计算
-        for col in range(N):
-            # 构造单位控制点向量
-            c = np.zeros(N)
-            c[col] = 1.0
-            basis = BSpline(knots, c, degree)
-            Phi[row, col] = basis(u)
-
-    return Phi
-
-
-def fit_quintic_bspline(points: np.ndarray) -> tuple[BSpline, np.ndarray, np.ndarray]:
-    """
-    拟合五次B样条曲线 (Eq.1-7)。
-
-    Args:
-        points: (N, 3) 离散刀尖位置
-
-    Returns:
-        spline: scipy BSpline 对象
-        knots: 节点向量
-        u_bar: 参数值
-    """
-    degree = 5
-
-    # Step 1: 向心参数化 (Eq.4)
-    u_bar = centripetal_parameterization(points)
-
-    # Step 2: 计算节点向量 (Eq.5)
-    knots = compute_knot_vector(u_bar, degree)
-
-    # Step 3: 构造基函数矩阵 (Eq.6)
-    Phi = bspline_basis_matrix(u_bar, knots, degree)
-
-    # Step 4: 求解控制点 (Eq.7)
-    # Γ = Φ^(-1) Ψ
-    control_points = np.linalg.solve(Phi, points)
-
-    # 创建 BSpline 对象
-    spline = BSpline(knots, control_points, degree)
-
-    return spline, knots, u_bar
+from .bspline import fit_quintic_bspline
 
 
 class FeedCorrectionPolynomial:
@@ -144,25 +21,31 @@ class FeedCorrectionPolynomial:
     9阶进给校正多项式 (Eq.11-22)。
 
     将弧长 l 映射到样条参数 u，同时满足 C³ 边界条件。
+    支持分段拟合，每段映射到 [u_start, u_end] 范围。
     """
 
-    def __init__(self, coeffs: np.ndarray, total_length: float):
+    def __init__(self, coeffs: np.ndarray, total_length: float, u_start: float = 0.0, u_end: float = 1.0):
         """
         Args:
             coeffs: (10,) 归一化多项式系数 [a_9, a_8, ..., a_0]
-            total_length: 总弧长 S
+            total_length: 段弧长 S
+            u_start: 段起始 u 值
+            u_end: 段结束 u 值
         """
         self.coeffs = coeffs
         self.S = total_length
+        self.u_start = u_start
+        self.u_end = u_end
 
     def __call__(self, l: float | np.ndarray) -> float | np.ndarray:
-        """计算 u(l)"""
+        """计算 u(l)，映射到 [u_start, u_end]"""
         sigma = np.asarray(l) / self.S
-        # 使用 Horner 法计算多项式
-        u = np.zeros_like(sigma)
+        # 使用 Horner 法计算归一化多项式 (输出 [0, 1])
+        u_normalized = np.zeros_like(sigma)
         for a in self.coeffs:
-            u = u * sigma + a
-        return u
+            u_normalized = u_normalized * sigma + a
+        # 映射到实际 u 范围
+        return self.u_start + u_normalized * (self.u_end - self.u_start)
 
     def derivative(self, l: float | np.ndarray, order: int = 1) -> float | np.ndarray:
         """计算 du/dl 的各阶导数"""
@@ -202,89 +85,107 @@ class FeedCorrectionPolynomial:
             raise ValueError(f"Order {order} not supported")
 
 
-def compute_boundary_derivatives(spline: BSpline, S: float) -> tuple[np.ndarray, np.ndarray]:
+def compute_derivatives_at_u(spline: BSpline, u: float, S: float) -> np.ndarray:
     """
-    计算边界处的导数值 (Eq.16)。
+    计算指定 u 处的导数值 (Eq.16)。
+
+    使用 B样条解析导数计算 f(u) = ||P'(u)|| 及其导数。
 
     Args:
         spline: 位置 B 样条
-        S: 总弧长
+        u: 参数值
+        S: 段弧长
 
     Returns:
-        derivs_0: [u_l(0), u_ll(0), u_lll(0)] * S^{1,2,3}
-        derivs_1: [u_l(1), u_ll(1), u_lll(1)] * S^{1,2,3}
+        [u_l * S, u_ll * S², u_lll * S³] 用于边界约束
     """
+    # 避免精确边界点的数值问题
+    u_eval = max(1e-8, min(u, 1 - 1e-8))
 
-    def f(u):
-        """弧长导数 ||P'(u)||"""
-        deriv = spline.derivative()(u)
-        return np.linalg.norm(deriv)
+    # 获取解析导数样条
+    spline_d1 = spline.derivative(1)  # P'(u)
+    spline_d2 = spline.derivative(2)  # P''(u)
+    spline_d3 = spline.derivative(3)  # P'''(u)
 
-    def f_prime(u, h=1e-7):
-        """f'(u) 数值微分"""
-        return (f(u + h) - f(u - h)) / (2 * h)
+    P1 = spline_d1(u_eval)  # P'(u)
+    P2 = spline_d2(u_eval)  # P''(u)
+    P3 = spline_d3(u_eval)  # P'''(u)
 
-    def f_double_prime(u, h=1e-5):
-        """f''(u) 数值微分"""
-        return (f(u + h) - 2 * f(u) + f(u - h)) / (h**2)
+    # f(u) = ||P'(u)||
+    f_val = np.linalg.norm(P1)
+    if f_val < 1e-12:
+        return np.array([S, 0.0, 0.0])
 
-    # 边界处的值
-    derivs_0 = np.zeros(3)
-    derivs_1 = np.zeros(3)
+    # f'(u) = (P' · P'') / ||P'||
+    fp_val = np.dot(P1, P2) / f_val
 
-    for i, u in enumerate([0.0, 1.0]):
-        # 避免精确边界点的数值问题
-        u_eval = max(1e-8, min(u, 1 - 1e-8))
+    # f''(u) = (||P''||² + P' · P''' - (P' · P'')² / ||P'||²) / ||P'||
+    fpp_val = (np.dot(P2, P2) + np.dot(P1, P3) - fp_val**2) / f_val
 
-        f_val = f(u_eval)
-        fp_val = f_prime(u_eval)
-        fpp_val = f_double_prime(u_eval)
+    # u_l = 1/f (Eq.16)
+    u_l = 1.0 / f_val
 
-        # u_l = 1/f (Eq.16)
-        u_l = 1.0 / f_val
+    # u_ll = -f'/f³ (Eq.16)
+    u_ll = -fp_val / (f_val**3)
 
-        # u_ll = -f'/f³ (Eq.16)
-        u_ll = -fp_val / (f_val**3)
+    # u_lll = (3f'² - f''f) / f⁵ (Eq.16)
+    u_lll = (3 * fp_val**2 - fpp_val * f_val) / (f_val**5)
 
-        # u_lll = (3f'² - f''f) / f⁵ (Eq.16)
-        u_lll = (3 * fp_val**2 - fpp_val * f_val) / (f_val**5)
-
-        if i == 0:
-            derivs_0 = np.array([u_l * S, u_ll * S**2, u_lll * S**3])
-        else:
-            derivs_1 = np.array([u_l * S, u_ll * S**2, u_lll * S**3])
-
-    return derivs_0, derivs_1
+    return np.array([u_l * S, u_ll * S**2, u_lll * S**3])
 
 
 def fit_feed_correction_polynomial(
     arc_lengths: np.ndarray,
     u_values: np.ndarray,
     spline: BSpline,
+    u_start: float | None = None,
+    u_end: float | None = None,
 ) -> FeedCorrectionPolynomial:
     """
     拟合9阶进给校正多项式 (Eq.11-22)。
 
     使用约束最小二乘法，满足 C³ 边界条件。
+    支持分段拟合：多项式在归一化域 [0,1] 上拟合，输出映射到 [u_start, u_end]。
 
     Args:
-        arc_lengths: (M,) 累积弧长 [0, l_1, ..., l_M=S]
-        u_values: (M,) 对应的参数值 [0, u_1, ..., u_M=1]
+        arc_lengths: (M,) 累积弧长 [0, l_1, ..., l_M=S]（相对于段起点）
+        u_values: (M,) 对应的参数值
         spline: 位置 B 样条
+        u_start: 段起始 u 值，默认使用 u_values[0]
+        u_end: 段结束 u 值，默认使用 u_values[-1]
 
     Returns:
         FeedCorrectionPolynomial 对象
     """
+    if u_start is None:
+        u_start = u_values[0]
+    if u_end is None:
+        u_end = u_values[-1]
+
     S = arc_lengths[-1]
     sigma = arc_lengths / S  # 归一化弧长
 
+    # 将 u_values 归一化到 [0, 1]
+    u_range = u_end - u_start
+    if u_range < 1e-12:
+        # 退化情况：段太短
+        coeffs = np.zeros(10)
+        coeffs[9] = 0.0  # a_0 = 0
+        return FeedCorrectionPolynomial(coeffs, S, u_start, u_end)
+
+    u_normalized = (u_values - u_start) / u_range
+
     # 构造 Vandermonde 矩阵 Φ (Eq.13)
-    M = len(sigma)
     powers = np.arange(9, -1, -1)
-    Phi = sigma[:, np.newaxis] ** powers  # (M, 10)
+    Phi = sigma[:, np.newaxis] ** powers
 
     # 计算边界导数 (Eq.16)
-    derivs_0, derivs_1 = compute_boundary_derivatives(spline, S)
+    derivs_0 = compute_derivatives_at_u(spline, u_start, S)
+    derivs_1 = compute_derivatives_at_u(spline, u_end, S)
+
+    # 导数需要按 u_range 缩放（链式法则）
+    derivs_0_scaled = derivs_0 / u_range
+    derivs_1_scaled = derivs_1 / u_range
 
     # 构造约束矩阵 Ω (Eq.18)
     # 8 个约束: u(0), u'(0), u''(0), u'''(0), u(1), u'(1), u''(1), u'''(1)
@@ -316,25 +217,23 @@ def fit_feed_correction_polynomial(
     coeff_3rd = np.array([504, 336, 210, 120, 60, 24, 6, 0, 0, 0])
     Omega[7, :] = coeff_3rd
 
-    # 右侧向量 η
+    # 右侧向量 η（归一化域）
     eta = np.array(
         [
             0,  # u(0) = 0
-            derivs_0[0],  # u'(0)*S
-            derivs_0[1],  # u''(0)*S²
-            derivs_0[2],  # u'''(0)*S³
+            derivs_0_scaled[0],  # u'(0)*S
+            derivs_0_scaled[1],  # u''(0)*S²
+            derivs_0_scaled[2],  # u'''(0)*S³
             1,  # u(1) = 1
-            derivs_1[0],  # u'(1)*S
-            derivs_1[1],  # u''(1)*S²
-            derivs_1[2],  # u'''(1)*S³
+            derivs_1_scaled[0],  # u'(1)*S
+            derivs_1_scaled[1],  # u''(1)*S²
+            derivs_1_scaled[2],  # u'''(1)*S³
         ]
     )
 
     # 构造 KKT 系统 (Eq.22)
-    # [Φ'Φ  Ω']   [α]   [Φ'u*]
-    # [Ω    0 ] * [Λ] = [η   ]
     PhiTPhi = Phi.T @ Phi
-    PhiTu = Phi.T @ u_values
+    PhiTu = Phi.T @ u_normalized
 
     n_constraints = 8
     n_coeffs = 10
@@ -348,16 +247,19 @@ def fit_feed_correction_polynomial(
     rhs[:n_coeffs] = PhiTu
     rhs[n_coeffs:] = eta
 
-    # 求解
+    # 求解（带条件数检查）
     try:
-        solution = np.linalg.solve(KKT, rhs)
+        cond = np.linalg.cond(KKT)
+        if cond > 1e12:
+            solution = np.linalg.lstsq(KKT, rhs, rcond=None)[0]
+        else:
+            solution = np.linalg.solve(KKT, rhs)
     except np.linalg.LinAlgError:
-        # 如果矩阵奇异，使用伪逆
         solution = np.linalg.lstsq(KKT, rhs, rcond=None)[0]
 
     coeffs = solution[:n_coeffs]
 
-    return FeedCorrectionPolynomial(coeffs, S)
+    return FeedCorrectionPolynomial(coeffs, S, u_start, u_end)
 
 
 class PositionSpline:
@@ -389,7 +291,7 @@ class PositionSpline:
         self._u_values: np.ndarray | None = None
 
     def fit(self):
-        """拟合五次B样条和进给校正多项式。"""
+        """拟合五次B样条和进给校正多项式。返回 self 以支持链式调用。"""
         # Step 1: 拟合五次 B 样条
         self.spline, self.knots, self.u_bar = fit_quintic_bspline(self.points)
 
@@ -398,6 +300,8 @@ class PositionSpline:
 
         # Step 3: 自适应拟合进给校正多项式
         self._fit_feed_correction_adaptive()
+
+        return self
 
     def _compute_arc_length_table(self):
         """使用自适应Simpson积分计算弧长表 (Eq.8-10)。"""
@@ -415,7 +319,7 @@ class PositionSpline:
         arc_lengths = [0.0]
         cumulative = 0.0
 
-        for start, end, length in intervals:
+        for _, end, length in intervals:
             cumulative += length
             u_values.append(end)
             arc_lengths.append(cumulative)
@@ -454,17 +358,24 @@ class PositionSpline:
             self._fit_segment(start_idx, mid_idx)
             self._fit_segment(mid_idx, end_idx)
 
-    def get_u_from_length(self, l: float) -> float:
-        """根据弧长获取样条参数 u。"""
-        l = np.clip(l, 0, self.length)
+    def get_u_from_length(self, l: float | np.ndarray) -> float | np.ndarray:
+        """根据弧长获取样条参数 u。支持标量和数组输入。"""
+        scalar_input = np.isscalar(l)
+        l = np.atleast_1d(np.clip(l, 0, self.length))
 
-        for l_start, l_end, poly in self.feed_corrections:
-            if l_start <= l <= l_end:
-                return poly(l - l_start)
+        u = np.zeros_like(l)
+        segment_ends = np.array([seg[1] for seg in self.feed_corrections])
 
-        # 如果没找到，使用最后一个
-        _, _, poly = self.feed_corrections[-1]
-        return poly(l - self.feed_corrections[-1][0])
+        # 使用 searchsorted 找到每个 l 所属的段
+        indices = np.searchsorted(segment_ends, l, side='left')
+        indices = np.clip(indices, 0, len(self.feed_corrections) - 1)
+
+        for i, (l_start, _, poly) in enumerate(self.feed_corrections):
+            mask = indices == i
+            if np.any(mask):
+                u[mask] = poly(l[mask] - l_start)
+
+        return float(u[0]) if scalar_input else u
 
     def evaluate(self, l: float) -> np.ndarray:
         """
@@ -481,7 +392,7 @@ class PositionSpline:
 
     def evaluate_batch(self, l_values: np.ndarray) -> np.ndarray:
         """
-        批量在弧长处评估位置。
+        批量在弧长处评估位置（向量化版本）。
 
         Args:
             l_values: (M,) 弧长数组
@@ -489,7 +400,8 @@ class PositionSpline:
         Returns:
             (M, 3) 位置数组
         """
-        return np.array([self.evaluate(l) for l in l_values])
+        u_values = self.get_u_from_length(l_values)
+        return self.spline(u_values)
 
 
 if __name__ == "__main__":

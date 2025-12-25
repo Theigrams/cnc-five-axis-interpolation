@@ -69,7 +69,7 @@ class FiveAxisPath:
 
     def fit(self):
         """
-        拟合位置和姿态样条。
+        拟合位置和姿态样条。返回 self 以支持链式调用。
 
         执行:
         1. 拟合五次 B 样条位置曲线
@@ -89,6 +89,8 @@ class FiveAxisPath:
             self.orientations, self._arc_lengths_at_points
         )
         self.orientation_spline.fit()
+
+        return self
 
     def _compute_arc_lengths_at_points(self):
         """计算每个数据点对应的弧长。"""
